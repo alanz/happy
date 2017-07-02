@@ -79,15 +79,16 @@ all_template_files = map fst (templates ++ glr_base_templates ++ glr_templates)
 
 templates :: [(FilePath,[String])]
 templates = [
-  ("HappyTemplate"                      , []),
-  ("HappyTemplate-ghc"                  , ["-DHAPPY_GHC"]),
-  ("HappyTemplate-coerce"               , ["-DHAPPY_GHC","-DHAPPY_COERCE"]),
-  ("HappyTemplate-arrays"               , ["-DHAPPY_ARRAY"]),
-  ("HappyTemplate-arrays-ghc"           , ["-DHAPPY_ARRAY","-DHAPPY_GHC"]),
-  ("HappyTemplate-arrays-coerce"        , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE"]),
-  ("HappyTemplate-arrays-debug"         , ["-DHAPPY_ARRAY","-DHAPPY_DEBUG"]),
-  ("HappyTemplate-arrays-ghc-debug"     , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
-  ("HappyTemplate-arrays-coerce-debug"  , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"])
+  ("HappyTemplate"                        , []),
+  ("HappyTemplate-ghc"                    , ["-DHAPPY_GHC"]),
+  ("HappyTemplate-coerce"                 , ["-DHAPPY_GHC","-DHAPPY_COERCE"]),
+  ("HappyTemplate-arrays"                 , ["-DHAPPY_ARRAY"]),
+  ("HappyTemplate-arrays-ghc"             , ["-DHAPPY_ARRAY","-DHAPPY_GHC"]),
+  ("HappyTemplate-arrays-coerce"          , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE"]),
+  ("HappyTemplate-arrays-debug"           , ["-DHAPPY_ARRAY","-DHAPPY_DEBUG"]),
+  ("HappyTemplate-arrays-ghc-debug"       , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
+  ("HappyTemplate-arrays-coerce-debug"    , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"])
+  ("HappyTemplate-incremental-ghc-debug"  , ["-DHAPPY_ARRAY","-DHAPPY_INCR","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
  ]
 
 glr_base_templates :: [(FilePath,[String])]

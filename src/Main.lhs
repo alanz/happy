@@ -69,7 +69,8 @@ Read and parse the CLI arguments.
 >                  prog <- getProgramName
 >                  bye (usageInfo (usageHeader prog) argInfo)
 >               (cli,_,_) | OptDebugParser `elem` cli
->                        && OptArrayTarget `notElem` cli -> do
+>                        && OptArrayTarget `notElem` cli
+>                        && OptIncrementalTarget `notElem` cli -> do
 >                  die "Cannot use debugging without -a\n"
 >               (cli,[fl_name],[]) ->
 >                  runParserGen cli fl_name
@@ -406,6 +407,7 @@ The command line arguments.
 >
 >               | OptGhcTarget
 >               | OptArrayTarget
+>               | OptIncrementalTarget
 >               | OptUseCoercions
 >               | OptDebugParser
 >               | OptStrict
@@ -435,6 +437,8 @@ The command line arguments.
 >       "use type coercions (only available with -g)",
 >    Option ['a'] ["array"] (NoArg OptArrayTarget)
 >       "generate an array-based parser",
+>    Option [] ["incremental"] (NoArg OptIncrementalTarget)
+>       "generate an incremental array-based parser",
 >    Option ['d'] ["debug"] (NoArg OptDebugParser)
 >       "produce a debugging parser (only with -a)",
 >    Option ['l'] ["glr"] (NoArg OptGLR)
@@ -472,16 +476,20 @@ Various debugging/dumping options...
 How would we like our code to be generated?
 
 > optToTarget :: CLIFlags -> Maybe Target
-> optToTarget OptArrayTarget    = Just TargetArrayBased
-> optToTarget _                 = Nothing
+> optToTarget OptArrayTarget       = Just TargetArrayBased
+> optToTarget OptIncrementalTarget = Just TargetIncremental
+> optToTarget _                    = Nothing
 
 > template_file :: String -> Target -> [CLIFlags] -> Bool -> String
 > template_file temp_dir target cli _coerce
->   = temp_dir ++ "/HappyTemplate" ++ array_extn ++ ghc_extn ++ debug_extn
+>   = temp_dir ++ "/HappyTemplate" ++ array_extn ++ incremental_extn ++ ghc_extn ++ debug_extn
 >  where
 >        ghc_extn   | OptUseCoercions `elem` cli = "-coerce"
 >                   | OptGhcTarget    `elem` cli = "-ghc"
 >                   | otherwise                  = ""
+>
+>        incremental_extn | target == TargetIncremental = "-incremental"
+>                         | otherwise                   = ""
 >
 >        array_extn | target == TargetArrayBased = "-arrays"
 >                   | otherwise                  = ""

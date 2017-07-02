@@ -202,6 +202,7 @@ based parsers -- types aren't as important there).
 
 >    produceTypes
 >     | target == TargetArrayBased = id
+>     | target == TargetIncremental = id
 
 >     | all isJust (elems nt_types) =
 >       happyReductionDefinition . str "\n\n"
@@ -336,8 +337,9 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 
 >               -- adjust the nonterminal number for the array-based parser
 >               -- so that nonterminals start at zero.
->               adjusted_nt | target == TargetArrayBased = nt - first_nonterm'
->                           | otherwise                  = nt
+>               adjusted_nt | target == TargetArrayBased  = nt - first_nonterm'
+>                           | target == TargetIncremental = nt - first_nonterm'
+>                           | otherwise                   = nt
 >
 >               mkReductionHdr lt' s =
 >                       let pcont = str monad_context
@@ -351,7 +353,8 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >                                        | otherwise = str "Int"
 >                           tysig = case lexer' of
 >                             Nothing -> id
->                             _ | target == TargetArrayBased ->
+>                             _ | target == TargetArrayBased ||
+>                                 target == TargetIncremental ->
 >                                 mkReduceFun i . str " :: " . pcont
 >                                 . str " => " . intMaybeHash
 >                                 . str " -> " . str token_type'
@@ -469,13 +472,16 @@ The token conversion function.
 >           (case target of
 >               TargetArrayBased ->
 >                 str "happyDoAction " . eofTok . strspace . str tk . str " action"
+>               TargetIncremental ->
+>                 str "happyDoAction (Terminal " . eofTok . str ") " . str tk . str " action"
 >               _ ->  str "action "     . eofTok . strspace . eofTok
 >                   . strspace . str tk . str " (HappyState action)")
 >            . str " sts stk"
 >         eofTok = showInt (tokIndex eof)
 >
 >         doAction = case target of
->           TargetArrayBased -> str "happyDoAction i tk action"
+>           TargetArrayBased  -> str "happyDoAction i tk action"
+>           TargetIncremental -> str "happyDoAction (Terminal i) tk action"
 >           _   -> str "action i i tk (HappyState action)"
 >
 >         doToken (i,tok)
@@ -503,8 +509,9 @@ the left hand side of '@'.
 
 >    tokIndex
 >       = case target of
->               TargetHaskell    -> id
->               TargetArrayBased -> \i -> i - n_nonterminals - n_starts - 2
+>               TargetHaskell     -> id
+>               TargetArrayBased  -> \i -> i - n_nonterminals - n_starts - 2
+>               TargetIncremental -> \i -> i - n_nonterminals - n_starts - 2
 >                       -- tokens adjusted to start at zero, see ARRAY_NOTES
 
 %-----------------------------------------------------------------------------
@@ -559,6 +566,12 @@ machinery to discard states in the parser...
 >       = foldr (.) id (map (produceStateFunction goto) (assocs action))
 >
 >    produceActionTable TargetArrayBased
+>       = produceActionArray
+>       . produceReduceArray
+>       . str "happy_n_terms = " . shows n_terminals . str " :: Int\n"
+>       . str "happy_n_nonterms = " . shows n_nonterminals . str " :: Int\n\n"
+>
+>    produceActionTable TargetIncremental
 >       = produceActionArray
 >       . produceReduceArray
 >       . str "happy_n_terms = " . shows n_terminals . str " :: Int\n"
@@ -839,20 +852,23 @@ MonadStuff:
 >                  intMaybeHash | ghc       = str "Happy_GHC_Exts.Int#"
 >                               | otherwise = str "Int"
 >                  happyParseSig
->                    | target == TargetArrayBased =
+>                    | target == TargetArrayBased ||
+>                      target == TargetIncremental =
 >                      str "happyParse :: " . pcont . str " => " . intMaybeHash
 >                      . str " -> " . pty . str " " . happyAbsSyn . str "\n"
 >                      . str "\n"
 >                    | otherwise = id
 >                  newTokenSig
->                    | target == TargetArrayBased =
+>                    | target == TargetArrayBased ||
+>                      target == TargetIncremental =
 >                      str "happyNewToken :: " . pcont . str " => " . intMaybeHash
 >                      . str " -> Happy_IntList -> HappyStk " . happyAbsSyn
 >                      . str " -> " . pty . str " " . happyAbsSyn . str"\n"
 >                      . str "\n"
 >                    | otherwise = id
 >                  doActionSig
->                    | target == TargetArrayBased =
+>                    | target == TargetArrayBased ||
+>                      target == TargetIncremental =
 >                      str "happyDoAction :: " . pcont . str " => " . intMaybeHash
 >                      . str " -> " . str token_type' . str " -> " . intMaybeHash
 >                      . str " -> Happy_IntList -> HappyStk " . happyAbsSyn
@@ -860,7 +876,8 @@ MonadStuff:
 >                      . str "\n"
 >                    | otherwise = id
 >                  reduceArrSig
->                    | target == TargetArrayBased =
+>                    | target == TargetArrayBased ||
+>                      target == TargetIncremental =
 >                      str "happyReduceArr :: " . pcont
 >                      . str " => Happy_Data_Array.Array Int (" . intMaybeHash
 >                      . str " -> " . str token_type' . str " -> " . intMaybeHash
@@ -919,6 +936,9 @@ directive determins the API of the provided function.
 >       . case target of
 >            TargetHaskell -> str "action_" . shows no
 >            TargetArrayBased
+>                | ghc       -> shows no . str "#"
+>                | otherwise -> shows no
+>            TargetIncremental
 >                | ghc       -> shows no . str "#"
 >                | otherwise -> shows no
 >       . maybe_tks
