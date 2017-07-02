@@ -83,7 +83,10 @@ Produce the complete output file.
 >       ) ""
 >  where
 >    n_starts = length starts'
->    token = brack token_type'
+>    token = case target of
+>              TargetIncremental -> str "(ParserInput HappyAbsSynType)"
+>              _ -> tokenRaw
+>    tokenRaw = brack token_type'
 >
 >    nowarn_opts = str "{-# OPTIONS_GHC -w #-}" . nl
 >       -- XXX Happy-generated code is full of warnings.  Some are easy to
@@ -180,7 +183,7 @@ example where this matters.
 
 >     | otherwise
 >       = str "data HappyAbsSyn " . str_tyvars
->       . str "\n\t= HappyTerminal " . token
+>       . str "\n\t= HappyTerminal " . tokenRaw
 >       . str "\n\t| HappyErrorToken Int\n"
 >       . interleave "\n"
 >         [ str "\t| " . makeAbsSynCon n . strspace . type_param n ty
@@ -414,20 +417,40 @@ The token conversion function.
 >       = case lexer' of {
 >
 >       Nothing ->
->         str "happyNewToken action sts stk [] =\n\t"
->       . eofAction "notHappyAtAll"
->       . str " []\n\n"
->       . str "happyNewToken action sts stk (tk:tks) =\n\t"
->       . str "let cont i = " . doAction . str " sts stk tks in\n\t"
->       . str "case tk of {\n\t"
->       . interleave ";\n\t" (map doToken token_rep)
->       . str "_ -> happyError' ((tk:tks), [])\n\t"
->       . str "}\n\n"
->       . str "happyError_ explist " . eofTok . str " tk tks = happyError' (tks, explist)\n"
->       . str "happyError_ explist _ tk tks = happyError' ((tk:tks), explist)\n";
->             -- when the token is EOF, tk == _|_ (notHappyAtAll)
->             -- so we must not pass it to happyError'
-
+>         case target of
+>           TargetIncremental ->
+>                   str "happyNewToken action sts stk [] =\n\t"
+>                 . eofAction "notHappyAtAll"
+>                 . str " []\n\n"
+>                 . str "happyNewToken action sts stk (t:ts) =\n\t"
+>                 . str "let cont i tk = " . doAction . str " sts stk ts in\n\t"
+>                 . str "case t of {\n\t"
+>                 . str "  InputToken tk ->\n\t"
+>                 . str "    case tk of {\n\t\t"
+>                 . interleave ";\n\t\t" (map doTokenInc token_rep)
+>                 . str "_ -> happyError' ((t:ts), [])\n\t\t"
+>                 . str "};\n\n\t"
+>                 . str "_ -> error \"to be implemented\";\n\n\t"
+>                 . str "};\n\n"
+>                 . str "happyError_ explist " . eofTok . str " tk tks = happyError' (tks, explist)\n"
+>                 . str "happyError_ explist _ tk tks = happyError' ((tk:tks), explist)\n";
+>                       -- when the token is EOF, tk == _|_ (notHappyAtAll)
+>                       -- so we must not pass it to happyError'
+>           _ ->
+>                   str "happyNewToken action sts stk [] =\n\t"
+>                 . eofAction "notHappyAtAll"
+>                 . str " []\n\n"
+>                 . str "happyNewToken action sts stk (tk:tks) =\n\t"
+>                 . str "let cont i = " . doAction . str " sts stk tks in\n\t"
+>                 . str "case tk of {\n\t"
+>                 . interleave ";\n\t" (map doToken token_rep)
+>                 . str "_ -> happyError' ((tk:tks), [])\n\t"
+>                 . str "}\n\n"
+>                 . str "happyError_ explist " . eofTok . str " tk tks = happyError' (tks, explist)\n"
+>                 . str "happyError_ explist _ tk tks = happyError' ((tk:tks), explist)\n"
+>                       -- when the token is EOF, tk == _|_ (notHappyAtAll)
+>                       -- so we must not pass it to happyError'
+>         ;
 >       Just (lexer'',eof') ->
 >       case (target, ghc) of
 >          (TargetHaskell, True) ->
@@ -460,6 +483,7 @@ The token conversion function.
 >       . interleave ";\n\t" (map doToken token_rep)
 >       . str "_ -> happyError' (tk, [])\n\t"
 >       . str "})\n\n"
+>
 >       . str "happyError_ explist " . eofTok . str " tk = happyError' (tk, explist)\n"
 >       . str "happyError_ explist _ tk = happyError' (tk, explist)\n";
 >             -- superfluous pattern match needed to force happyError_ to
@@ -488,6 +512,12 @@ The token conversion function.
 >               = str (removeDollarDollar tok)
 >               . str " -> cont "
 >               . showInt (tokIndex i)
+>
+>         doTokenInc (i,tok)
+>               = str (removeDollarDollar tok)
+>               . str " -> cont "
+>               . showInt (tokIndex i)
+>               . str " tk"
 
 Use a variable rather than '_' to replace '$$', so we can use it on
 the left hand side of '@'.
