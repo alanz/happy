@@ -138,6 +138,7 @@ executable happy
 
   extensions: CPP, MagicHash, FlexibleContexts
   ghc-options: -Wall
+  CPP-Options: -DDEBUG
   other-modules:
         AbsSyn
         First

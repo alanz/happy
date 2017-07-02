@@ -34,7 +34,8 @@ Here is our mid-section datatype
 
 #ifdef DEBUG
 
-> import System.IOExts
+> -- import System.IOExts
+> import System.IO
 
 #endif
 

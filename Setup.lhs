@@ -87,8 +87,8 @@ templates = [
   ("HappyTemplate-arrays-coerce"          , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE"]),
   ("HappyTemplate-arrays-debug"           , ["-DHAPPY_ARRAY","-DHAPPY_DEBUG"]),
   ("HappyTemplate-arrays-ghc-debug"       , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
-  ("HappyTemplate-arrays-coerce-debug"    , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"])
-  ("HappyTemplate-incremental-ghc-debug"  , ["-DHAPPY_ARRAY","-DHAPPY_INCR","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
+  ("HappyTemplate-arrays-coerce-debug"    , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"]),
+  ("HappyTemplate-incremental-ghc-debug"  , ["-DHAPPY_ARRAY","-DHAPPY_INCR","-DHAPPY_GHC","-DHAPPY_DEBUG"])
  ]
 
 glr_base_templates :: [(FilePath,[String])]

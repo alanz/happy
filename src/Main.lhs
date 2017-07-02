@@ -119,11 +119,11 @@ Mangle the syntax into something useful.
 
 #ifdef DEBUG
 
->       optPrint cli DumpLR0    (putStr (show sets))            >>
->       optPrint cli DumpAction (putStr (show action))          >>
->       optPrint cli DumpGoto   (putStr (show goto))            >>
->       optPrint cli DumpLA     (putStr (show _lainfo))         >>
->       optPrint cli DumpLA     (putStr (show la))              >>
+>       optPrint cli DumpLR0    (putStr ("LR0:"    ++ show sets))          >>
+>       optPrint cli DumpAction (putStr ("Action:" ++ show action))        >>
+>       optPrint cli DumpGoto   (putStr ("Goto:"   ++ show goto))          >>
+>       optPrint cli DumpLA     (putStr ("LAInfo:" ++ show _lainfo))       >>
+>       optPrint cli DumpLA     (putStr ("LA:"     ++ show la))            >>
 
 #endif
 
