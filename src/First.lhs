@@ -48,7 +48,7 @@ Implementation of FIRST
 >                       [ joinSymSets fn (snd4 (prodNo rl)) |
 >                               rl <- prodsOfName n ]
 
-My little hack
+My little hack (to get the RHS of a production)
 
 > snd4 :: (a, b, c, d) -> b
 > snd4 (_,b,_,_) = b

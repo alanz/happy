@@ -1,5 +1,5 @@
 name: happy
-version: 1.19.9
+version: 1.20.0
 license: BSD2
 license-file: LICENSE
 copyright: (c) Andy Gill, Simon Marlow
@@ -99,6 +99,7 @@ extra-source-files:
 	src/ARRAY-NOTES
 	templates/GLR_Base.hs
 	templates/GenericTemplate.hs
+	templates/IncrementalTemplate.hs
 	templates/GLR_Lib.hs
 	tests/AttrGrammar001.y
 	tests/AttrGrammar002.y
@@ -166,6 +167,7 @@ executable happy
         Parser
         ProduceCode
         ProduceGLRCode
+        ProduceIncrementalCode
         NameSet
         Target
         AttrGrammar

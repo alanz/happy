@@ -9,5 +9,6 @@ The target data type.
 > data Target
 >       = TargetHaskell                 -- functions and things
 >       | TargetArrayBased              -- arrays
+>       | TargetIncremental             -- Incremental, using arrays
 
 >  deriving Eq

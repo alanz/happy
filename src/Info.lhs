@@ -24,9 +24,9 @@ Produce a file of parser information, useful for debugging the parser.
 >       -> Grammar
 >       -> ActionTable
 >       -> GotoTable
->       -> [(Int,String)]
->       -> Array Int (Int,Int)
->       -> String
+>       -> [(Int,String)]               -- terminals/tokens
+>       -> Array Int (Int,Int)          -- conflictArray
+>       -> String                       -- filename
 >       -> [Int]                        -- unused rules
 >       -> [String]                     -- unused terminals
 >       -> String
@@ -135,20 +135,23 @@ Produce a file of parser information, useful for debugging the parser.
 >       = id
 >   showAction (t, act)
 >       = str "\t"
->       . showJName 15 t
+> --      . showJName 15 t
+>       . showJNameN 15 t
 >       . showAction' act
 >       . str "\n"
 
 >   showAction' LR'MustFail
 >       = str "fail"
->   showAction' (LR'Shift n _)
+>   showAction' (LR'Shift n p)
 >       = str "shift, and enter state "
 >       . shows n
+>       . showPriority p
 >   showAction' LR'Accept
 >       = str "accept"
->   showAction' (LR'Reduce n _)
+>   showAction' (LR'Reduce n p)
 >       = str "reduce using rule "
 >       . shows n
+>       . showPriority p
 >   showAction' (LR'Multiple as a)
 >       = showAction' a
 >       . str "\n"
@@ -166,6 +169,18 @@ Produce a file of parser information, useful for debugging the parser.
 >       . shows n
 >       . str "\n"
 
+>   showPriority No = id
+>   showPriority (Prio a n)
+>     = str "\n\t\t\t\t\t("
+>     . showAssoc a
+>     . str " "
+>     . shows n
+>     . str ")"
+
+>   showAssoc LeftAssoc  = str "left"
+>   showAssoc RightAssoc = str "right"
+>   showAssoc None       = str "nonde"
+
 >   showTerminals
 >       = banner "Terminals"
 >       . interleave "\n" (map showTerminal tokens)
@@ -173,7 +188,7 @@ Produce a file of parser information, useful for debugging the parser.
 
 >   showTerminal (t,s)
 >       = str "\t"
->       . showJName 15 t
+>       . showJNameN 15 t
 >       . str "{ " . str s . str " }"
 
 >   showNonTerminals
@@ -183,7 +198,7 @@ Produce a file of parser information, useful for debugging the parser.
 
 >   showNonTerminal nt
 >       = str "\t"
->       . showJName 15 nt
+>       . showJNameN 15 nt
 >       . (if (length nt_rules == 1)
 >               then str " rule  "
 >               else str " rules ")
@@ -200,10 +215,16 @@ Produce a file of parser information, useful for debugging the parser.
 
 >   nameOf n    = env ! n
 >   showName    = str . nameOf
+>   showJName :: Int -> Int -> String -> String
 >   showJName j = str . ljustify j . nameOf
+>   showJNameN :: Int -> Int -> String -> String
+>   showJNameN j = \n -> showJName j n . rjustify 14 . str (show n) . str " "
 
 > ljustify :: Int -> String -> String
 > ljustify n s = s ++ replicate (max 0 (n - length s)) ' '
+>
+> rjustify :: Int -> String -> String
+> rjustify n s = replicate (max 0 (n - length s)) ' ' ++ s
 
 > ljuststr :: Int -> (String -> String) -> String -> String
 > ljuststr n s = str (ljustify n (s ""))

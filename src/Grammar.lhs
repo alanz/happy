@@ -32,8 +32,16 @@ Here is our mid-section datatype
 
 > import Control.Monad.Writer
 
+#ifdef DEBUG
+
+> -- import System.IOExts
+> import System.IO
+
+#endif
+
 > type Name = Int
 
+> -- LHS, RHS, semantic info, priority
 > type Production = (Name,[Name],(String,[Int]),Priority)
 
 > data Grammar
