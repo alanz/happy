@@ -366,8 +366,8 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >                                 . happyAbsSyn . str " -> "
 >                                 . pty . str " " . happyAbsSyn . str "\n"
 >                               | otherwise -> id in
->                       tysig . mkReduceFun i . str " = "
->                       . str s . strspace . lt' . strspace . showInt adjusted_nt
+>                       tysig . mkReduceFun i . str " am = "
+>                       . str s . strspace . lt' . str " am " . showInt adjusted_nt
 >                       . strspace . reductionFun . nl
 >                       . reductionFun . strspace
 >
@@ -423,7 +423,8 @@ The token conversion function.
 >                 . eofAction "notHappyAtAll"
 >                 . str " []\n\n"
 >                 . str "happyNewToken action sts stk (t:ts) =\n\t"
->                 . str "let cont i tk = " . doAction . str " sts stk ts in\n\t"
+>                 . str "let cont i tk = " . doAction . str " sts stk ts\n\t"
+>                 . str "    am = Normal in\n\t"
 >                 . str "case t of {\n\t"
 >                 . str "  InputToken tk ->\n\t"
 >                 . str "    case tk of {\n\t\t"
@@ -497,7 +498,7 @@ The token conversion function.
 >               TargetArrayBased ->
 >                 str "happyDoAction " . eofTok . strspace . str tk . str " action"
 >               TargetIncremental ->
->                 str "happyDoAction (Terminal " . eofTok . str ") " . str tk . str " action"
+>                 str "happyDoAction Normal (Terminal " . eofTok . str ") " . str tk . str " action"
 >               _ ->  str "action "     . eofTok . strspace . eofTok
 >                   . strspace . str tk . str " (HappyState action)")
 >            . str " sts stk"
@@ -505,7 +506,7 @@ The token conversion function.
 >
 >         doAction = case target of
 >           TargetArrayBased  -> str "happyDoAction i tk action"
->           TargetIncremental -> str "happyDoAction (Terminal i) tk action"
+>           TargetIncremental -> str "happyDoAction am (Terminal i) tk action"
 >           _   -> str "action i i tk (HappyState action)"
 >
 >         doToken (i,tok)
