@@ -311,8 +311,8 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >       . interleave "\n\t" tokPatterns
 >       . str " =  "
 >       . tokLets (
->           this_absSynCon . str "\n\t\t "
->           . char '(' . str code' . str "\n\t)"
+>           str "mkNode (" . this_absSynCon . str "\n\t\t "
+>           . char '(' . str code' . str "\n\t))"
 >         )
 >       . (if coerce || null toks || null vars_used then
 >                 id
@@ -381,15 +381,15 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >               tokPattern n t | t >= firstStartTok && t < fst_term
 >                       = if coerce
 >                               then mkHappyVar n
->                               else brack' (
+>                               else str "(Node {here = " . brack' (
 >                                    makeAbsSynCon t . str "  " . mkHappyVar n
->                                    )
+>                                    ) . str "})"
 >               tokPattern n t
 >                       = if coerce
 >                               then mkHappyTerminalVar n t
->                               else str "(HappyTerminal "
+>                               else str "(Node {here = (HappyTerminal "
 >                                  . mkHappyTerminalVar n t
->                                  . char ')'
+>                                  . str ")})"
 >
 >               tokLets code''
 >                  | coerce && not (null cases)
@@ -977,9 +977,9 @@ directive determins the API of the provided function.
 >       . brack' (if coerce
 >                    then str "\\x -> happyReturn (happyOut"
 >                       . shows accept_nonterm . str " x)"
->                    else str "\\x -> case x of {HappyAbsSyn"
+>                    else str "\\x -> case x of {Node { here = HappyAbsSyn"
 >                       . shows (nt_types_index ! accept_nonterm)
->                       . str " z -> happyReturn z; _other -> notHappyAtAll }"
+>                       . str " z } -> happyReturn z; _other -> notHappyAtAll }"
 >                )
 >     where
 >       maybe_tks | isNothing lexer' = str " tks"
