@@ -189,6 +189,7 @@ example where this matters.
 >         [ str "\t| " . makeAbsSynCon n . strspace . type_param n ty
 >         | (n, ty) <- assocs nt_types,
 >           (nt_types_index ! n) == n]
+>       . str "\n\tderiving Show\n"
 
 >     where all_tyvars = [ 't':show n | (n, Nothing) <- assocs nt_types ]
 >           str_tyvars = str (unwords all_tyvars)
@@ -312,7 +313,7 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >       . str " =  "
 >       . tokLets (
 >           str "mkNode (" . this_absSynCon . str "\n\t\t "
->           . char '(' . str code' . str "\n\t))"
+>           . char '(' . str code' . str "\n\t)) " . tokVars
 >         )
 >       . (if coerce || null toks || null vars_used then
 >                 id
@@ -377,19 +378,23 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >                | coerce = reverse (map mkDummyVar [1 .. length toks])
 >                | otherwise = reverse (zipWith tokPattern [1..] toks)
 >
->               tokPattern n _ | n `notElem` vars_used = char '_'
+>               tokPattern n _ | n `notElem` vars_used = str ("p" ++ show n)
 >               tokPattern n t | t >= firstStartTok && t < fst_term
 >                       = if coerce
 >                               then mkHappyVar n
->                               else str "(Node {here = " . brack' (
+>                               else str ("p" ++show n) . str "@(Node {here = " . brack' (
 >                                    makeAbsSynCon t . str "  " . mkHappyVar n
 >                                    ) . str "})"
 >               tokPattern n t
 >                       = if coerce
 >                               then mkHappyTerminalVar n t
->                               else str "(Node {here = (HappyTerminal "
+>                               else str ("p" ++show n) . str "@(Node {here = (HappyTerminal "
 >                                  . mkHappyTerminalVar n t
 >                                  . str ")})"
+>               tokVars
+>                 | target == TargetIncremental = str "[" . vars . str "]"
+>                 | otherwise = id
+>                 where vars = str (intercalate "," (map (\n -> ("p" ++ show n)) [1 .. length toks]))
 >
 >               tokLets code''
 >                  | coerce && not (null cases)
@@ -979,7 +984,8 @@ directive determins the API of the provided function.
 >                       . shows accept_nonterm . str " x)"
 >                    else str "\\x -> case x of {Node { here = HappyAbsSyn"
 >                       . shows (nt_types_index ! accept_nonterm)
->                       . str " z } -> happyReturn z; _other -> notHappyAtAll }"
+> --                      . str " z } -> happyReturn z; _other -> notHappyAtAll }"
+>                       . str " z } -> happyReturn x; _other -> notHappyAtAll }"
 >                )
 >     where
 >       maybe_tks | isNothing lexer' = str " tks"
