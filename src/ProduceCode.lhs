@@ -428,9 +428,10 @@ The token conversion function.
 >                 . eofAction "notHappyAtAll"
 >                 . str " []\n\n"
 >                 . str "happyNewToken action sts stk (t:ts) =\n\t"
->                 . str "let cont i tk = " . doAction . str " sts stk ts\n\t"
+>                 . str "let cont i inp ts' = " . doAction . str " sts stk ts'\n\t"
 >                 . str "    am = Normal in\n\t"
 >                 . str "case terminals t of {\n\t"
+>                 . str "  [] -> happyNewToken action sts stk ts;\n\t"
 >                 . str "  (Tok _ tk:tks) ->\n\t"
 >                 . str "    case tk of {\n\t\t"
 >                 . interleave ";\n\t\t" (map doTokenInc token_rep)
@@ -503,7 +504,9 @@ The token conversion function.
 >               TargetArrayBased ->
 >                 str "happyDoAction " . eofTok . strspace . str tk . str " action"
 >               TargetIncremental ->
->                 str "happyDoAction Normal " . eofTok . str " " . str tk . str " action"
+> --              str "happyDoAction Normal " . eofTok . str " " . str tk . str " action"
+>                 str "happyDoAction Normal " . eofTok . str " " . str "(mkTokensNode [Tok " . eofTok . str " " . str tk . str "]) action"
+
 >               _ ->  str "action "     . eofTok . strspace . eofTok
 >                   . strspace . str tk . str " (HappyState action)")
 >            . str " sts stk"
@@ -511,7 +514,7 @@ The token conversion function.
 >
 >         doAction = case target of
 >           TargetArrayBased  -> str "happyDoAction i tk action"
->           TargetIncremental -> str "happyDoAction am i tk action"
+>           TargetIncremental -> str "happyDoAction am i inp action"
 >           _   -> str "action i i tk (HappyState action)"
 >
 >         doToken (i,tok)
@@ -524,6 +527,7 @@ The token conversion function.
 >               . str " -> cont "
 >               . showInt (tokIndex i)
 >               . str " (t { terminals = Tok " . showInt (tokIndex i) . str " tk:tks})"
+>               . str " ((t { terminals = tks}):ts)"
 
 Use a variable rather than '_' to replace '$$', so we can use it on
 the left hand side of '@'.
