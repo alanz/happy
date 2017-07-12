@@ -382,15 +382,15 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >               tokPattern n t | t >= firstStartTok && t < fst_term
 >                       = if coerce
 >                               then mkHappyVar n
->                               else str ("p" ++show n) . str "@(Node {here = " . brack' (
+>                               else str ("p" ++show n) . str "@(Node (Val {here = " . brack' (
 >                                    makeAbsSynCon t . str "  " . mkHappyVar n
->                                    ) . str "})"
+>                                    ) . str "}) _)"
 >               tokPattern n t
 >                       = if coerce
 >                               then mkHappyTerminalVar n t
->                               else str ("p" ++show n) . str "@(Node {here = (HappyTerminal "
+>                               else str ("p" ++show n) . str "@(Node (Val {here = (HappyTerminal "
 >                                  . mkHappyTerminalVar n t
->                                  . str ")})"
+>                                  . str ")}) _)"
 >               tokVars
 >                 | target == TargetIncremental = str "[" . vars . str "]"
 >                 | otherwise = id
@@ -430,7 +430,7 @@ The token conversion function.
 >                 . str "happyNewToken action sts stk (t:ts) =\n\t"
 >                 . str "let cont i inp ts' = " . doAction . str " sts stk ts'\n\t"
 >                 . str "    am = Normal in\n\t"
->                 . str "case terminals t of {\n\t"
+>                 . str "case getTerminals t of {\n\t"
 >                 . str "  [] -> happyNewToken action sts stk ts;\n\t"
 >                 . str "  (Tok _ tk:tks) ->\n\t"
 >                 . str "    case tk of {\n\t\t"
@@ -526,8 +526,8 @@ The token conversion function.
 >               = str (removeDollarDollar tok)
 >               . str " -> cont "
 >               . showInt (tokIndex i)
->               . str " (t { terminals = Tok " . showInt (tokIndex i) . str " tk:tks})"
->               . str " ((t { terminals = tks}):ts)"
+>               . str " (setTerminals t (Tok " . showInt (tokIndex i) . str " tk:tks))"
+>               . str " ((setTerminals t tks):ts)"
 
 Use a variable rather than '_' to replace '$$', so we can use it on
 the left hand side of '@'.
@@ -986,10 +986,10 @@ directive determins the API of the provided function.
 >       . brack' (if coerce
 >                    then str "\\x -> happyReturn (happyOut"
 >                       . shows accept_nonterm . str " x)"
->                    else str "\\x -> case x of {Node { here = HappyAbsSyn"
+>                    else str "\\x -> case x of {Node (Val { here = HappyAbsSyn"
 >                       . shows (nt_types_index ! accept_nonterm)
-> --                      . str " z } -> happyReturn z; _other -> notHappyAtAll }"
->                       . str " z } -> happyReturn x; _other -> notHappyAtAll }"
+> --                      . str " z }) _ -> happyReturn z; _other -> notHappyAtAll }"
+>                       . str " z }) _ -> happyReturn x; _other -> notHappyAtAll }"
 >                )
 >     where
 >       maybe_tks | isNothing lexer' = str " tks"
