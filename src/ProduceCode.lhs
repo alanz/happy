@@ -431,7 +431,8 @@ The token conversion function.
 >                 . str "let cont i inp ts' = " . doAction . str " sts stk ts'\n\t"
 >                 . str "    am = Normal in\n\t"
 >                 . str "case getTerminals t of {\n\t"
->                 . str "  [] -> happyNewToken action sts stk ts;\n\t"
+> --                 . str "  [] -> happyNewToken action sts stk ts;\n\t"
+>                 . str "  [] -> cont " . showInt 0 . str " t ts;\n\t"
 >                 . str "  (Tok _ tk:tks) ->\n\t"
 >                 . str "    case tk of {\n\t\t"
 >                 . interleave ";\n\t\t" (map doTokenInc token_rep)
