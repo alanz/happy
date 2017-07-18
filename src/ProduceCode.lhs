@@ -71,6 +71,7 @@ Produce the complete output file.
 >       . produceAbsSynDecl . nl
 >       . produceTypes
 >       . produceExpListPerState
+>       . produceGotoValidPerStateNonTerminal
 >       . produceActionTable target
 >       . produceReductions
 >       . produceTokenConverter . nl
@@ -639,6 +640,14 @@ machinery to discard states in the parser...
 >       where (first_token, last_token) = bounds token_names'
 >             nr_tokens = last_token - first_token + 1
 >
+>    produceGotoValidPerStateNonTerminal
+>       = produceGotoValidArray
+>       . str "{-# NOINLINE happyGotoValid #-}\n"
+>       . str "happyGotoValid st nt = valid\n"
+>       . str "  where bit_nr = nt + st * " . str (show n_nonterminals') . str "\n"
+>       . str "        valid = readArrayBit happyGotoValidArray bit_nr\n"
+>       . str "\n"
+>
 >    produceStateFunction goto' (state, acts)
 >       = foldr (.) id (map produceActions assocs_acts)
 >       . foldr (.) id (map produceGotos   (assocs gotos))
@@ -761,12 +770,26 @@ action array indexed by (terminal * last_state) + state
 >           . interleave' "," (map shows explist)
 >           . str "\n\t])\n\n"
 
+>    produceGotoValidArray
+>       | ghc
+>           = str "happyGotoValidArray :: HappyAddr\n"
+>           . str "happyGotoValidArray = HappyA# \"" --"
+>           . str (hexChars gotovalid)
+>           . str "\"#\n\n" --"
+>       | otherwise
+>           = str "happyGotoValidArray :: Happy_Data_Array.Array Int Int\n"
+>           . str "happyGotoValidArray = Happy_Data_Array.listArray (0,"
+>               . shows table_size . str ") (["
+>           . interleave' "," (map shows gotovalid)
+>           . str "\n\t])\n\n"
+
 >    (_, last_state) = bounds action
 >    n_states = last_state + 1
 >    n_terminals = length terms
 >    n_nonterminals = length nonterms - n_starts -- lose %starts
+>    n_nonterminals' = snd (bounds (goto ! 0)) + 1
 >
->    (act_offs,goto_offs,table,defaults,check,explist)
+>    (act_offs,goto_offs,table,defaults,check,explist,gotovalid)
 >       = mkTables action goto first_nonterm' fst_term
 >               n_terminals n_nonterminals n_starts (bounds token_names')
 >
@@ -1161,6 +1184,7 @@ See notes under "Action Tables" above for some subtleties in this function.
 >        ,[Int]         -- happyDefAction
 >        ,[Int]         -- happyCheck
 >        ,[Int]         -- happyExpList
+>        ,[Int]         -- happyGotoValid
 >        )
 >
 > mkTables action goto first_nonterm' fst_term
@@ -1172,14 +1196,15 @@ See notes under "Action Tables" above for some subtleties in this function.
 >      take max_off (elems table),
 >      def_actions,
 >      take max_off (elems check),
->      elems explist
+>      elems explist,
+>      elems gotovalid
 >   )
 >  where
 >
->        (table,check,act_offs,goto_offs,explist,max_off)
->                = runST (genTables (length actions)
+>        (table,check,act_offs,goto_offs,explist,gotovalid,max_off)
+>                = runST (genTables (length actions) n_nonterminals
 >                         max_token token_names_bound
->                         sorted_actions explist_actions)
+>                         sorted_actions explist_actions goto)
 >
 >        -- the maximum token number used in the parser
 >        max_token = max n_terminals (n_starts+n_nonterminals) - 1
@@ -1253,42 +1278,50 @@ See notes under "Action Tables" above for some subtleties in this function.
 
 > genTables
 >        :: Int                         -- number of actions
+>        -> Int                         -- number of nonterminals
 >        -> Int                         -- maximum token no.
 >        -> (Int, Int)                  -- token names bounds
 >        -> [TableEntry]                -- entries for the table
 >        -> [(Int, [Int])]              -- expected tokens lists
+>        -> GotoTable
 >        -> ST s (UArray Int Int,       -- table
 >                 UArray Int Int,       -- check
 >                 UArray Int Int,       -- action offsets
 >                 UArray Int Int,       -- goto offsets
 >                 UArray Int Int,       -- expected tokens list
+>                 UArray Int Int,       -- valid gotos
 >                 Int                   -- highest offset in table
 >           )
 >
-> genTables n_actions max_token token_names_bound entries explist = do
+> genTables n_actions n_nonterminals' max_token token_names_bound entries explist gotos = do
 >
->   table      <- newArray (0, mAX_TABLE_SIZE) 0
->   check      <- newArray (0, mAX_TABLE_SIZE) (-1)
->   act_offs   <- newArray (0, n_actions) 0
->   goto_offs  <- newArray (0, n_actions) 0
->   off_arr    <- newArray (-max_token, mAX_TABLE_SIZE) 0
->   exp_array  <- newArray (0, (n_actions * n_token_names + 15) `div` 16) 0
+>   table        <- newArray (0, mAX_TABLE_SIZE) 0
+>   check        <- newArray (0, mAX_TABLE_SIZE) (-1)
+>   act_offs     <- newArray (0, n_actions) 0
+>   goto_offs    <- newArray (0, n_actions) 0
+>   off_arr      <- newArray (-max_token, mAX_TABLE_SIZE) 0
+>   exp_array    <- newArray (0, (n_actions * n_token_names + 15) `div` 16) 0
+>   goto_val_arr <- newArray (0, (n_goto_states * n_nonterminals + 15) `div` 16) 0
 >
->   max_off <- genTables' table check act_offs goto_offs off_arr exp_array entries
->                       explist max_token n_token_names
+>   max_off <- genTables' table check act_offs goto_offs off_arr exp_array goto_val_arr
+>                       entries
+>                       explist gotos max_token n_token_names n_nonterminals
 >
->   table'     <- freeze table
->   check'     <- freeze check
->   act_offs'  <- freeze act_offs
->   goto_offs' <- freeze goto_offs
->   exp_array' <- freeze exp_array
->   return (table',check',act_offs',goto_offs',exp_array',max_off+1)
+>   table'        <- freeze table
+>   check'        <- freeze check
+>   act_offs'     <- freeze act_offs
+>   goto_offs'    <- freeze goto_offs
+>   exp_array'    <- freeze exp_array
+>   goto_val_arr' <- freeze goto_val_arr
+>   return (table',check',act_offs',goto_offs',exp_array',goto_val_arr',max_off+1)
 
 >   where
 >        n_states = n_actions - 1
 >        mAX_TABLE_SIZE = n_states * (max_token + 1)
 >        (first_token, last') = token_names_bound
 >        n_token_names = last' - first_token + 1
+>        n_goto_states  = snd (bounds gotos) + 1
+>        n_nonterminals = snd (bounds (gotos ! 0)) + 1
 
 
 > genTables'
@@ -1298,15 +1331,19 @@ See notes under "Action Tables" above for some subtleties in this function.
 >        -> STUArray s Int Int          -- goto offsets
 >        -> STUArray s Int Int          -- offset array
 >        -> STUArray s Int Int          -- expected token list
+>        -> STUArray s Int Int          -- valid gotos
 >        -> [TableEntry]                -- entries for the table
 >        -> [(Int, [Int])]              -- expected tokens lists
+>        -> GotoTable
 >        -> Int                         -- maximum token no.
 >        -> Int                         -- number of token names
+>        -> Int                         -- number of nonterminals
 >        -> ST s Int                    -- highest offset in table
 >
-> genTables' table check act_offs goto_offs off_arr exp_array entries
->            explist max_token n_token_names
->       = fill_exp_array >> fit_all entries 0 1
+> genTables' table check act_offs goto_offs off_arr exp_array goto_val_arr
+>            entries
+>            explist gotos max_token n_token_names n_nonterminals
+>       = fill_exp_array >> fill_goto_valid_array >> fit_all entries 0 1
 >   where
 >
 >        fit_all [] max_off _ = return max_off
@@ -1324,6 +1361,18 @@ See notes under "Action Tables" above for some subtleties in this function.
 >              let word_offset = bit_nr `mod` 16
 >              x <- readArray exp_array word_nr
 >              writeArray exp_array word_nr (setBit x word_offset)
+>
+>        fill_goto_valid_array =
+>          forM_ (assocs gotos) $ \(state, by_nonterminal) ->
+>            forM_ (assocs by_nonterminal) $ \(nt,gotoaction) -> do
+>              let bit_nr = state * n_nonterminals + nt --  - (fst (bounds by_nonterminal))
+>              let word_nr     = bit_nr `div` 16
+>              let word_offset = bit_nr `mod` 16
+>              case gotoaction of
+>                Goto _ -> do
+>                  x <- readArray goto_val_arr word_nr
+>                  writeArray goto_val_arr word_nr (setBit x word_offset)
+>                NoGoto -> return ()
 >
 >        -- try to merge identical states.  We only try the next state(s)
 >        -- in the list, but the list is kind-of sorted so we shouldn't
