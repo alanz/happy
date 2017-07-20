@@ -434,7 +434,7 @@ The token conversion function.
 >                 . str "let cont i inp ts' = " . doAction . str " sts stk ts'\n\t"
 >                 . str "    am = Normal in\n\t"
 >                 . str "case getTerminals t of {\n\t"
->                 . str "  [] -> cont " . showInt 0 . str " [t] ts;\n\t"
+>                 . str "  [] -> cont " . showInt 0 . str " t ts;\n\t"
 >                 . str "  (Tok _ tk:tks) ->\n\t"
 >                 . str "    case tk of {\n\t\t"
 >                 . interleave ";\n\t\t" (map doTokenInc token_rep)
@@ -507,7 +507,7 @@ The token conversion function.
 >                 str "happyDoAction " . eofTok . strspace . str tk . str " action"
 >               TargetIncremental ->
 > --              str "happyDoAction Normal " . eofTok . str " " . str tk . str " action"
->                 str "happyDoAction Normal " . eofTok . str " " . str "[mkTokensNode [Tok " . eofTok . str " " . str tk . str "]] action"
+>                 str "happyDoAction Normal " . eofTok . str " " . str "(mkTokensNode [Tok " . eofTok . str " " . str tk . str "]) action"
 
 >               _ ->  str "action "     . eofTok . strspace . eofTok
 >                   . strspace . str tk . str " (HappyState action)")
@@ -528,8 +528,8 @@ The token conversion function.
 >               = str (removeDollarDollar tok)
 >               . str " -> cont "
 >               . showInt (tokIndex i)
->               . str " (setTerminals [t] (Tok " . showInt (tokIndex i) . str " tk:tks))"
->               . str " ((setTerminals [t] tks)++ts)"
+>               . str " (setTerminals t (Tok " . showInt (tokIndex i) . str " tk:tks))"
+>               . str " ((setTerminals t tks):ts)"
 
 Use a variable rather than '_' to replace '$$', so we can use it on
 the left hand side of '@'.
