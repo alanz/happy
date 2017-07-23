@@ -427,12 +427,11 @@ The token conversion function.
 >       Nothing ->
 >         case target of
 >           TargetIncremental ->
->                   str "happyNewToken action sts stk [] =\n\t"
+>                   str "happyNewToken verifying action sts stk [] =\n\t"
 >                 . eofAction "notHappyAtAll"
 >                 . str " []\n\n"
->                 . str "happyNewToken action sts stk (t:ts) =\n\t"
->                 . str "let cont i inp ts' = " . doAction . str " sts stk ts'\n\t"
->                 . str "    am = Normal in\n\t"
+>                 . str "happyNewToken verifying action sts stk (t:ts) =\n\t"
+>                 . str "let cont i inp ts' = " . doAction . str " sts stk ts' in\n\t"
 >                 . str "case getTerminals t of {\n\t"
 >                 . str "  [] -> cont " . showInt 0 . str " t ts;\n\t"
 >                 . str "  (Tok _ tk:tks) ->\n\t"
@@ -507,7 +506,7 @@ The token conversion function.
 >                 str "happyDoAction " . eofTok . strspace . str tk . str " action"
 >               TargetIncremental ->
 > --              str "happyDoAction Normal " . eofTok . str " " . str tk . str " action"
->                 str "happyDoAction Normal " . eofTok . str " " . str "(mkTokensNode [Tok " . eofTok . str " " . str tk . str "]) action"
+>                 str "happyDoAction NotVerifying " . eofTok . str " " . str "(mkTokensNode [Tok " . eofTok . str " " . str tk . str "]) action"
 
 >               _ ->  str "action "     . eofTok . strspace . eofTok
 >                   . strspace . str tk . str " (HappyState action)")
@@ -516,7 +515,7 @@ The token conversion function.
 >
 >         doAction = case target of
 >           TargetArrayBased  -> str "happyDoAction i tk action"
->           TargetIncremental -> str "happyDoAction am i inp action"
+>           TargetIncremental -> str "happyDoAction verifying i inp action"
 >           _   -> str "action i i tk (HappyState action)"
 >
 >         doToken (i,tok)
