@@ -101,6 +101,8 @@ Produce the complete output file.
 >                             , top_options
 >                             , "#-}"
 >                             ]) . nl
+>
+>    incremental = target == TargetIncremental
 
 %-----------------------------------------------------------------------------
 Make the abstract syntax type declaration, of the form:
@@ -312,12 +314,17 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >       = mkReductionHdr id ("happySpecReduce_" ++ show lt)
 >       . interleave "\n\t" tokPatterns
 >       . str " =  "
->       . tokLets (
->           str "mkNode (" . this_absSynCon . str "\n\t\t "
->           . char '(' . str code' . str "\n\t)) "
->           . str "(Just " . shows adjusted_nt . str ")"
->           . str " " . tokVars
->         )
+>       . tokLets
+>           (if incremental
+>             then
+>              str "mkNode (" . this_absSynCon . str "\n\t\t "
+>              . char '(' . str code' . str "\n\t)) "
+> --             . str "(Just " . shows adjusted_nt . str ")"
+>              . str "(Just " . shows (nt + 1) . str ")"
+>              . str " " . tokVars
+>             else
+>              this_absSynCon . str "\n\t\t "
+>              . char '(' . str code' . str "\n\t)")
 >       . (if coerce || null toks || null vars_used then
 >                 id
 >          else
@@ -552,7 +559,8 @@ the left hand side of '@'.
 >       = case target of
 >               TargetHaskell     -> id
 >               TargetArrayBased  -> \i -> i - n_nonterminals - n_starts - 2
->               TargetIncremental -> \i -> i - n_nonterminals - n_starts - 2
+> --              TargetIncremental -> \i -> i                  - n_starts - 2
+>               TargetIncremental -> \i -> i                  + 1
 >                       -- tokens adjusted to start at zero, see ARRAY_NOTES
 
 %-----------------------------------------------------------------------------
@@ -785,10 +793,13 @@ action array indexed by (terminal * last_state) + state
 >    n_terminals = length terms
 >    n_nonterminals = length nonterms - n_starts -- lose %starts
 >    n_nonterminals' = snd (bounds (goto ! 0)) + 1
+>    fst_term_or_nt = if target == TargetIncremental then 0 else fst_term
+>    n_nonterms_to_skip = if target == TargetIncremental then (n_starts + 1) else n_nonterminals
 >
 >    (act_offs,goto_offs,table,defaults,check,explist,gotovalid)
->       = mkTables action goto first_nonterm' fst_term
+>       = mkTables action goto first_nonterm' fst_term_or_nt
 >               n_terminals n_nonterminals n_starts (bounds token_names')
+>               n_nonterms_to_skip
 >
 >    table_size = length table - 1
 >
@@ -1175,6 +1186,7 @@ See notes under "Action Tables" above for some subtleties in this function.
 
 > mkTables
 >        :: ActionTable -> GotoTable -> Name -> Int -> Int -> Int -> Int -> (Int, Int) ->
+>           Int ->
 >        ([Int]         -- happyActOffsets
 >        ,[Int]         -- happyGotoOffsets
 >        ,[Int]         -- happyTable
@@ -1186,7 +1198,7 @@ See notes under "Action Tables" above for some subtleties in this function.
 >
 > mkTables action goto first_nonterm' fst_term
 >               n_terminals n_nonterminals n_starts
->               token_names_bound
+>               token_names_bound n_nonterms_to_skip
 >
 >  = ( elems act_offs,
 >      elems goto_offs,
@@ -1219,7 +1231,8 @@ See notes under "Action Tables" above for some subtleties in this function.
 >                   acts'')
 >                | (state, acts) <- assocs action,
 >                  let (err:_dummy:vec) = assocs acts
->                      vec' = drop (n_starts+n_nonterminals) vec
+> --                     vec' = drop (n_starts+n_nonterminals) vec
+>                      vec' = drop (n_starts+n_nonterms_to_skip) vec
 >                      acts' = filter (notFail) (err:vec')
 >                      default_act = getDefault acts'
 >                      acts'' = mkActVals acts' default_act
@@ -1236,6 +1249,8 @@ See notes under "Action Tables" above for some subtleties in this function.
 >        --  (see ARRAY_NOTES)
 >        adjust token | token == errorTok = 0
 >                     | otherwise         = token - fst_term + 1
+>                             -- NOTE: for incremental, fst_term is set to zero,
+>                             --       to make space for nonterms in the table too.
 >
 >        mkActVals assocs' default_act =
 >                [ (adjust token, actionVal act)

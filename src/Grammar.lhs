@@ -41,6 +41,7 @@ Here is our mid-section datatype
 
 > type Name = Int
 
+> -- LHS, RHS, semantic info, priority
 > type Production = (Name,[Name],(String,[Int]),Priority)
 
 > data Grammar
@@ -347,6 +348,7 @@ Get the token specs in terms of Names.
 
 >          lookup_prods :: Name -> [Int]
 >          lookup_prods x | x >= firstStartTok && x < first_t = arr ! x
+> --         lookup_prods x | x >= firstStartTok  = arr ! x
 >          lookup_prods _ = error "lookup_prods"
 >
 >          productions' = start_prods ++ concat rules2

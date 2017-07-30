@@ -262,8 +262,8 @@ calcLookaheads pass.
 >       -> [(Set Lr0Item,[(Name,Int)])]         -- LR(0) kernel sets
 >       -> ([Name] -> NameSet)                  -- First function
 >       -> (
->               [(Int, Lr0Item, NameSet)],      -- spontaneous lookaheads
->               Array Int [(Lr0Item, Int, Lr0Item)]     -- propagated lookaheads
+>               [(Int, Lr0Item, NameSet)],          -- spontaneous lookaheads
+>               Array Int [(Lr0Item, Int, Lr0Item)] -- propagated lookaheads
 >          )
 
 > propLookaheads gram sets first = (concat s, array (0,length sets - 1)
@@ -455,6 +455,7 @@ Generate the action table
 > genActionTable g first sets = actionTable
 >   where
 >       Grammar { first_term = fst_term,
+>                 first_nonterm = fst_nonterm,
 >                 terminals = terms,
 >                 starts = starts',
 >                 priorities = prios } = g
@@ -469,9 +470,11 @@ Generate the action table
 >                               (possActions goto set))
 >                   | ((set,goto),set_no) <- zip sets [0..] ]
 
+>       possAction :: [(Name, Int)] -> [Lr1Item] -> Lr1Item -> [(Name, LRAction)]
 >       possAction goto _set (Lr1 rule pos la) =
 >          case findRule g rule pos of
->               Just t | t >= fst_term || t == errorTok ->
+> --              Just t | t >= fst_term || t == errorTok ->
+>               Just t | t >= fst_nonterm || t == errorTok ->
 >                       let f j = (t,LR'Shift j p)
 >                           p = maybe No id (lookup t prios)
 >                       in map f $ maybeToList (lookup t goto)
@@ -484,6 +487,7 @@ Generate the action table
 >                          (_,_,_,p) -> NameSet.toAscList la `zip` repeat (LR'Reduce rule p)
 >               _ -> []
 
+>       possActions :: [(Name, Int)] -> [Lr1Item] -> [(Name, LRAction)]
 >       possActions goto coll = do item <- closure1 g first coll
 >                                  possAction goto coll item
 

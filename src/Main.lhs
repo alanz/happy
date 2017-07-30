@@ -124,6 +124,7 @@ Mangle the syntax into something useful.
 >       optPrint cli DumpGoto   (putStr ("Goto:"   ++ show goto))          >>
 >       optPrint cli DumpLA     (putStr ("LAInfo:" ++ show _lainfo))       >>
 >       optPrint cli DumpLA     (putStr ("LA:"     ++ show la))            >>
+>       putStrLn ("\nincremental:" ++ show (elem OptIncrementalTarget cli)) >>
 
 #endif
 
