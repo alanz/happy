@@ -142,14 +142,16 @@ Produce a file of parser information, useful for debugging the parser.
 
 >   showAction' LR'MustFail
 >       = str "fail"
->   showAction' (LR'Shift n _)
+>   showAction' (LR'Shift n p)
 >       = str "shift, and enter state "
 >       . shows n
+>       . showPriority p
 >   showAction' LR'Accept
 >       = str "accept"
->   showAction' (LR'Reduce n _)
+>   showAction' (LR'Reduce n p)
 >       = str "reduce using rule "
 >       . shows n
+>       . showPriority p
 >   showAction' (LR'Multiple as a)
 >       = showAction' a
 >       . str "\n"
@@ -166,6 +168,18 @@ Produce a file of parser information, useful for debugging the parser.
 >       . str "goto state "
 >       . shows n
 >       . str "\n"
+
+>   showPriority No = id
+>   showPriority (Prio a n)
+>     = str "\n\t\t\t\t\t("
+>     . showAssoc a
+>     . str " "
+>     . shows n
+>     . str ")"
+
+>   showAssoc LeftAssoc  = str "left"
+>   showAssoc RightAssoc = str "right"
+>   showAssoc None       = str "nonde"
 
 >   showTerminals
 >       = banner "Terminals"
@@ -205,8 +219,6 @@ Produce a file of parser information, useful for debugging the parser.
 >   showJName j = str . ljustify j . nameOf
 >   showJNameN :: Int -> Int -> String -> String
 >   showJNameN j = \n -> showJName j n . rjustify 14 . str (show n) . str " "
->   foo :: String -> String
->   foo = str "blah"
 
 > ljustify :: Int -> String -> String
 > ljustify n s = s ++ replicate (max 0 (n - length s)) ' '
