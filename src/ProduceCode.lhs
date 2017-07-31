@@ -322,6 +322,7 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >              . char '(' . str code' . str "\n\t)) "
 > --             . str "(Just " . shows adjusted_nt . str ")"
 >              . str "(Just " . shows (nt + 1) . str ")"
+>              . str " fragile"
 >              . str " " . tokVars
 >             else
 >              this_absSynCon . str "\n\t\t "
@@ -329,7 +330,7 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >       . (if coerce || null toks || null vars_used then
 >                 id
 >          else
->                 nl . reductionFun . strspace
+>                 nl . reductionFun . str " fragile" . strspace
 >               . interleave " " (map str (take (length toks) (repeat "_")))
 >               . str " = notHappyAtAll ")
 
@@ -378,10 +379,10 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >                                 . happyAbsSyn . str " -> "
 >                                 . pty . str " " . happyAbsSyn . str "\n"
 >                               | otherwise -> id in
->                       tysig . mkReduceFun i . str " am = "
+>                       tysig . mkReduceFun i . str " am fragile = "
 >                       . str s . strspace . lt' . str " am " . showInt adjusted_nt
->                       . strspace . reductionFun . nl
->                       . reductionFun . strspace
+>                       . strspace . str "(" . reductionFun . str " fragile)" . nl
+>                       . reductionFun . str " fragile" . strspace
 >
 >               reductionFun = str "happyReduction_" . shows i
 >
