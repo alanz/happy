@@ -562,7 +562,7 @@ the left hand side of '@'.
 >               TargetHaskell     -> id
 >               TargetArrayBased  -> \i -> i - n_nonterminals - n_starts - 2
 > --              TargetIncremental -> \i -> i                  - n_starts - 2
->               TargetIncremental -> \i -> i                  + 1
+>               TargetIncremental -> \i -> i                  - n_starts - 2
 >                       -- tokens adjusted to start at zero, see ARRAY_NOTES
 
 %-----------------------------------------------------------------------------
@@ -740,6 +740,7 @@ action array indexed by (terminal * last_state) + state
 >           . str "happyTable = HappyA# \"" --"
 >           . str (hexChars table)
 >           . str "\"#\n\n" --"
+>           . debugShowActions
 
 >       | otherwise
 >           = str "happyActOffsets :: Happy_Data_Array.Array Int Int\n"
@@ -816,13 +817,15 @@ action array indexed by (terminal * last_state) + state
 >    n_terminals = length terms
 >    n_nonterminals = length nonterms - n_starts -- lose %starts
 >    n_nonterminals' = snd (bounds (goto ! 0)) + 1
->    fst_term_or_nt = if target == TargetIncremental then 0 else fst_term
+>    fst_term_or_nt = if target == TargetIncremental then first_nonterm' else fst_term
 >    n_nonterms_to_skip = if target == TargetIncremental then (n_starts + 1) else n_nonterminals
 >
->    (act_offs,goto_offs,table,defaults,check,explist,gotovalid,fragilestates)
+>    (act_offs,goto_offs,table,defaults,check,explist,gotovalid,fragilestates,actionsfordebugging)
 >       = mkTables action goto first_nonterm' fst_term_or_nt
 >               n_terminals n_nonterminals n_starts (bounds token_names')
 >               n_nonterms_to_skip
+> 
+>    debugShowActions = str "\n-- " . str (show actionsfordebugging) . str "\n\n"
 >
 >    table_size = length table - 1
 >
@@ -1218,6 +1221,7 @@ See notes under "Action Tables" above for some subtleties in this function.
 >        ,[Int]         -- happyExpList
 >        ,[Int]         -- happyGotoValid
 >        ,[Int]         -- happyFragileStates
+>        , [TableEntry] -- AZ:Debug
 >        )
 >
 > mkTables action goto first_nonterm' fst_term
@@ -1232,6 +1236,7 @@ See notes under "Action Tables" above for some subtleties in this function.
 >      elems explist,
 >      elems gotovalid,
 >      elems fragilestates
+>      , actions -- AZ debug
 >   )
 >  where
 >
@@ -1315,6 +1320,9 @@ See notes under "Action Tables" above for some subtleties in this function.
 >                | otherwise = GT
 
 > data ActionOrGoto = ActionEntry | GotoEntry
+#ifdef DEBUG
+>       deriving Show
+#endif
 > type TableEntry = (ActionOrGoto,
 >                       Int{-stateno-},
 >                       Int{-default-},
