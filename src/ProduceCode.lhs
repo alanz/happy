@@ -321,7 +321,7 @@ happyMonadReduce to get polymorphic recursion.  Sigh.
 >              str "mkNode (" . this_absSynCon . str "\n\t\t "
 >              . char '(' . str code' . str "\n\t)) "
 > --             . str "(Just " . shows adjusted_nt . str ")"
->              . str "(Just " . shows (nt + 1) . str ")"
+>              . str "(Just " . shows (tokIndex nt) . str ")"
 >              . str " fragile"
 >              . str " " . tokVars
 >             else
@@ -818,13 +818,14 @@ action array indexed by (terminal * last_state) + state
 >    n_nonterminals = length nonterms - n_starts -- lose %starts
 >    n_nonterminals' = snd (bounds (goto ! 0)) + 1
 >    fst_term_or_nt = if target == TargetIncremental then first_nonterm' else fst_term
->    n_nonterms_to_skip = if target == TargetIncremental then (n_starts + 1) else n_nonterminals
+> --   n_nonterms_to_skip = if target == TargetIncremental then (n_starts + 1) else n_nonterminals
+>    n_nonterms_to_skip = if target == TargetIncremental then 0 else n_nonterminals
 >
 >    (act_offs,goto_offs,table,defaults,check,explist,gotovalid,fragilestates,actionsfordebugging)
 >       = mkTables action goto first_nonterm' fst_term_or_nt
 >               n_terminals n_nonterminals n_starts (bounds token_names')
 >               n_nonterms_to_skip
-> 
+>
 >    debugShowActions = str "\n-- " . str (show actionsfordebugging) . str "\n\n"
 >
 >    table_size = length table - 1
@@ -1275,6 +1276,8 @@ See notes under "Action Tables" above for some subtleties in this function.
 >                            f (t, LR'Shift _ _ ) = [t - fst token_names_bound]
 >                            f (_, _) = []
 >
+>        -- A state is fragile if it has a conflict in it, or a priority.
+>        -- The incremental parser does more processing in this case for a changed tree.
 >        fragile_states :: [Bool]
 >        fragile_states = map is_fragile $ assocs action
 >        is_fragile :: (t,Array Int LRAction) -> Bool
