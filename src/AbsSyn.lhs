@@ -22,7 +22,9 @@ Here is the abstract syntax of the language we parse.
 >         [Rule]        -- productions
 >         (Maybe String)                                        -- footer
 
+> --                id     params?  rhs's   signature type
 > type Rule     = (String,[String],[Prod],Maybe String)
+> --                terms  code   line  precedence
 > type Prod     = ([Term],String,Int,Maybe String)
 > data Term     = App String [Term]
 

@@ -86,7 +86,7 @@ Produce the complete output file.
 >  where
 >    n_starts = length starts'
 >    token = case target of
->              TargetIncremental -> str "(HappyInput)"
+>              TargetIncremental -> str "(t)"
 >              _ -> tokenRaw
 >    tokenRaw = brack token_type'
 >
