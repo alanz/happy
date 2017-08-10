@@ -450,9 +450,9 @@ Generating the goto table doesn't need lookahead info.
 -----------------------------------------------------------------------------
 Generate the action table
 
-> genActionTable :: Grammar -> ([Name] -> NameSet) ->
+> genActionTable :: Bool -> Grammar -> ([Name] -> NameSet) ->
 >                [([Lr1Item],[(Name,Int)])] -> ActionTable
-> genActionTable g first sets = actionTable
+> genActionTable incremental g first sets = actionTable
 >   where
 >       Grammar { first_term = fst_term,
 >                 first_nonterm = fst_nonterm,
@@ -470,11 +470,14 @@ Generate the action table
 >                               (possActions goto set))
 >                   | ((set,goto),set_no) <- zip sets [0..] ]
 
+>       fst_item = if incremental then fst_nonterm else fst_term
+>
 >       possAction :: [(Name, Int)] -> [Lr1Item] -> Lr1Item -> [(Name, LRAction)]
 >       possAction goto _set (Lr1 rule pos la) =
 >          case findRule g rule pos of
 > --              Just t | t >= fst_term || t == errorTok ->
->               Just t | t >= fst_nonterm || t == errorTok ->
+> --              Just t | t >= fst_nonterm || t == errorTok ->
+>               Just t | t >= fst_item || t == errorTok ->
 >                       let f j = (t,LR'Shift j p)
 >                           p = maybe No id (lookup t prios)
 >                       in map f $ maybeToList (lookup t goto)

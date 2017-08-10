@@ -54,9 +54,10 @@ myPostBuild _ flags _ lbi = do
         writeFile dst . unlines . map mungeLinePragma . lines =<< readFile tmp
         removeFile tmp
 
-  sequence_ ([ cpp_template "GenericTemplate.hs" dst opts | (dst,opts) <- templates ] ++
-             [ cpp_template "GLR_Base.hs"       dst opts | (dst,opts) <- glr_base_templates ] ++
-             [ cpp_template "GLR_Lib.hs"        dst opts | (dst,opts) <- glr_templates ])
+  sequence_ ([ cpp_template "GenericTemplate.hs"     dst opts | (dst,opts) <- templates ] ++
+             [ cpp_template "GLR_Base.hs"            dst opts | (dst,opts) <- glr_base_templates ] ++
+             [ cpp_template "GLR_Lib.hs"             dst opts | (dst,opts) <- glr_templates ] ++
+             [ cpp_template "IncrementalTemplate.hs" dst opts | (dst,opts) <- incremental_templates ])
 
 myPostClean _ _ _ _ = mapM_ (try' . removeFile) all_template_files
   where try' :: IO a -> IO (Either IOError a)
@@ -75,7 +76,7 @@ myCopy pkg_descr lbi hooks copy_flags =
         }
 
 all_template_files :: [FilePath]
-all_template_files = map fst (templates ++ glr_base_templates ++ glr_templates)
+all_template_files = map fst (templates ++ glr_base_templates ++ glr_templates ++ incremental_templates)
 
 templates :: [(FilePath,[String])]
 templates = [
@@ -87,8 +88,13 @@ templates = [
   ("HappyTemplate-arrays-coerce"          , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE"]),
   ("HappyTemplate-arrays-debug"           , ["-DHAPPY_ARRAY","-DHAPPY_DEBUG"]),
   ("HappyTemplate-arrays-ghc-debug"       , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
-  ("HappyTemplate-arrays-coerce-debug"    , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"]),
-  ("HappyTemplate-incremental-ghc-debug"  , ["-DHAPPY_ARRAY","-DHAPPY_INCR","-DHAPPY_GHC","-DHAPPY_DEBUG"])
+  ("HappyTemplate-arrays-coerce-debug"    , ["-DHAPPY_ARRAY","-DHAPPY_GHC","-DHAPPY_COERCE","-DHAPPY_DEBUG"])
+  ]
+
+incremental_templates :: [(FilePath,[String])]
+incremental_templates = [
+  ("IncrementalTemplate"                  , ["-DHAPPY_INCR"]),
+  ("IncrementalTemplate-debug"            , ["-DHAPPY_INCR","-DHAPPY_DEBUG"])
  ]
 
 glr_base_templates :: [(FilePath,[String])]

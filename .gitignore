@@ -15,6 +15,7 @@ HappyTemplate-arrays-ghc
 HappyTemplate-arrays-ghc-debug
 HappyTemplate-coerce
 HappyTemplate-ghc
-HappyTemplate-incremental-ghc-debug
+IncrementalTemplate
+IncrementalTemplate-debug
 .*.swp
 .*.swo

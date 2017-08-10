@@ -348,7 +348,6 @@ Get the token specs in terms of Names.
 
 >          lookup_prods :: Name -> [Int]
 >          lookup_prods x | x >= firstStartTok && x < first_t = arr ! x
-> --         lookup_prods x | x >= firstStartTok  = arr ! x
 >          lookup_prods _ = error "lookup_prods"
 >
 >          productions' = start_prods ++ concat rules2
