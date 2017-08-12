@@ -94,7 +94,9 @@ templates = [
 incremental_templates :: [(FilePath,[String])]
 incremental_templates = [
   ("IncrementalTemplate"                  , ["-DHAPPY_INCR"]),
-  ("IncrementalTemplate-debug"            , ["-DHAPPY_INCR","-DHAPPY_DEBUG"])
+  ("IncrementalTemplate-debug"            , ["-DHAPPY_INCR","-DHAPPY_DEBUG"]),
+  ("IncrementalTemplate-ghc-debug"        , ["-DHAPPY_INCR","-DHAPPY_GHC","-DHAPPY_DEBUG"]),
+  ("IncrementalTemplate-ghc"              , ["-DHAPPY_INCR","-DHAPPY_GHC"])
  ]
 
 glr_base_templates :: [(FilePath,[String])]

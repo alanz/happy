@@ -17,5 +17,7 @@ HappyTemplate-coerce
 HappyTemplate-ghc
 IncrementalTemplate
 IncrementalTemplate-debug
+IncrementalTemplate-ghc
+IncrementalTemplate-ghc-debug
 .*.swp
 .*.swo
