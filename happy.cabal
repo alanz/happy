@@ -142,6 +142,9 @@ source-repository head
 flag small_base
   description: Deprecated. Does nothing.
 
+flag debug
+  description: Enables the DEBUG #define
+
 executable happy
   hs-source-dirs: src
   main-is: Main.lhs
@@ -174,6 +177,8 @@ executable happy
         AttrGrammarParser
         ParamRules
         PrettyGrammar
+  if flag(debug)
+    cpp-options: -DDEBUG
 
 library
   exposed-modules:     Happy
