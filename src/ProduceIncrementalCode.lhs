@@ -73,6 +73,7 @@ Produce the complete output file.
 >               -- comment goes *after* the module header, so that we
 >               -- don't screw up any OPTIONS pragmas in the header.
 >       . produceAbsSynDecl . nl
+>       . produceTokenDecl
 >       . produceTypes
 >       . produceExpListPerState
 >       . produceGotoValidPerStateNonTerminal
@@ -201,6 +202,36 @@ example where this matters.
 
 >     where all_tyvars = [ 't':show n | (n, Nothing) <- assocs nt_types ]
 >           str_tyvars = str (unwords all_tyvars)
+
+%-----------------------------------------------------------------------------
+Make the token type declaration, of the form:
+
+data Tok = Tok FAST_INT Token
+  deriving Show
+instance Pretty Tok
+
+>    produceTokenDecl
+>       = nl
+>       . str "data Tok = Tok " . intMaybeHash . str " (" . str token_type' . str ")"
+>       . str "\n  deriving Show"
+>       . str "\ninstance Pretty Tok"
+>       . nl
+>       where intMaybeHash | ghc       = str "Happy_GHC_Exts.Int#"
+>                          | otherwise = str "Int"
+
+AZ:NOTE: The second param above (str token_type') can/should be moved
+into the Input type, as it is meaningless for a nonterminal. But what
+about compatibility with other happy options?
+
+The problem comes from the mapping of a Token to a unique number in
+happyNewToken
+
+For now, keep it outside, but give an error value when processing a NonTerminal
+This leads to the unfortunate creation of a second input type.
+data ParserInput a
+  = InputToken Token
+  | InputTree a
+
 
 %-----------------------------------------------------------------------------
 Type declarations of the form:
